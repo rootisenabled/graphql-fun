@@ -18,11 +18,11 @@ const Book = new GraphQLObjectType({
   fields: () => ({
     title: {
       type: GraphQLString,
-      resolve: xml => xml.title[0]
+      resolve: xml => xml.GoodreadsResponse.book[0].title[0]
     },
     description: {
       type: GraphQLString,
-      resolve: xml => xml.description[0]
+      resolve: xml => xml.GoodreadsResponse.book[0].description[0]
     }
   })
 })
@@ -37,7 +37,14 @@ const Author = new GraphQLObjectType({
     },
     books: {
       type: new GraphQLList(Book),
-      resolve: xml => xml.GoodreadsResponse.author[0].books[0].book
+      resolve: xml => {
+        const ids = xml.GoodreadsResponse.author[0].books[0].book.map(elem => elem.id[0]._)
+        return Promise.all(ids.map(id =>
+          fetch(`https://www.goodreads.com/book/show/${id}.xml?key=${API_KEY}`)
+            .then(response => response.text())
+            .then(parseXML)
+        ))
+      }
     }
   })
 })
